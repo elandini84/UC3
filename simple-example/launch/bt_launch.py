@@ -34,6 +34,7 @@ def generate_launch_description():
         Node(
             package='bt_executable',
             executable='bt_executable',
+            output='screen',
             arguments=[ './src/behavior_tree/BT/simple_bt.xml']
         )
     ])

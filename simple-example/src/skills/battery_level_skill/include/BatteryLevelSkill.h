@@ -15,6 +15,7 @@
 #include <bt_interfaces/srv/tick_condition.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
 #include <mutex>
+#include <QTimer>
 
 
 
@@ -44,7 +45,14 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr m_subscription;
     std::atomic<Status> m_tickResult{Status::undefined};
     // BatteryLevelDataModel m_dataModel;
-
     BatteryLevelSkillSM m_stateMachine;
     std::mutex m_requestMutex;
+    
+    
+	bool m_fireTopicCallbackTimer{false};
+	bool m_fireTickCallTimer{false};
+	std::atomic<double> m_batteryValue{100.0};
+	QTimer m_timerCallback;
+	QTimer m_timerTick;
 };
+

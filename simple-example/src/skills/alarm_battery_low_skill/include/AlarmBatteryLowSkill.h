@@ -17,6 +17,7 @@
 #include <alarm_interfaces/srv/start_alarm.hpp>
 #include <alarm_interfaces/srv/stop_alarm.hpp>
 #include <mutex>
+#include <QTimer>
 
 
 
@@ -53,4 +54,9 @@ private:
     // rclcpp::Client<alarm_interfaces::srv::StartAlarm>::SharedPtr m_clientStartAlarm;
     rclcpp::Client<alarm_interfaces::srv::StopAlarm>::SharedPtr m_clientStopAlarm;
     AlarmBatteryLowSM m_stateMachine;
+    
+    bool m_fireHaltCallTimer{false};
+	bool m_fireTickCallTimer{false};
+	QTimer m_timerHalt;
+	QTimer m_timerTick;
 };

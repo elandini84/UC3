@@ -7,11 +7,11 @@
 
 #include "BatteryLevelSkill.h"
 
-#include <QTimer>
 #include <QDebug>
 #include <QTime>
 #include <iostream>
 #include <QStateMachine>
+#include <thread>
 
 BatteryLevelSkill::BatteryLevelSkill(std::string name ) :
         m_name(std::move(name))
@@ -39,23 +39,42 @@ bool BatteryLevelSkill::start(int argc, char*argv[])
 
     
     RCLCPP_DEBUG_STREAM(m_node->get_logger(), "BatteryLevelSkill::start");
-    std::cout << "BatteryLevelSkill::start";
+    qInfo() << "BatteryLevelSkill::start";
     m_tickService = m_node->create_service<bt_interfaces::srv::TickCondition>(m_name + "Skill/tick",  
                                                                                 std::bind(&BatteryLevelSkill::tick,
                                                                                 this,
                                                                                 std::placeholders::_1,
                                                                                 std::placeholders::_2));
+                                   
+    QObject::connect(&m_timerTick, &QTimer::timeout, [&]() {
+                if (m_fireTickCallTimer) {
+					    m_stateMachine.submitEvent("tickCall");
+					    m_fireTickCallTimer = false;
+				}
+            });
+    m_timerTick.start();
+    QObject::connect(&m_timerCallback, &QTimer::timeout,  [&]() {
+                if (m_fireTopicCallbackTimer) {
+					    QVariantMap data;
+						data.insert("result", m_batteryValue.load());
+						m_stateMachine.submitEvent("BatteryDriverCmpInterface.readLevel", data);
+					    m_fireTopicCallbackTimer = false;
+				}
+            });
+    m_timerCallback.start();
 
     m_stateMachine.start();
     m_threadSpin = std::make_shared<std::thread>(spin, m_node);
     m_subscription = m_node->create_subscription<sensor_msgs::msg::BatteryState>(
      "/battery_status", 10, std::bind(&BatteryLevelSkill::topic_callback, this, std::placeholders::_1));
 
+        //qInfo() << "main thread id" << std::this_thread::get_id();
 
 
-    m_stateMachine.connectToEvent("TICK_RESPONSE", [this]([[maybe_unused]]const QScxmlEvent & event){
+    m_stateMachine.connectToEvent("tickReturn", [this]([[maybe_unused]]const QScxmlEvent & event){
         std::string result = event.data().toMap()["result"].toString().toStdString();
-        // RCLCPP_INFO(m_node->get_logger(), "BatteryLevelSkill::tickresponse----------------%s--------------------------------", result.c_str());
+        //qInfo() << "m_stateMachine.connectToEvent id" << std::this_thread::get_id();
+
 
         if (result == "SUCCESS" )
         { 
@@ -74,9 +93,10 @@ void BatteryLevelSkill::tick( [[maybe_unused]] const std::shared_ptr<bt_interfac
 {
     std::lock_guard<std::mutex> lock(m_requestMutex);
     // RCLCPP_INFO(m_node->get_logger(), "BatteryLevelSkill::tick");
+    m_fireTickCallTimer = true;
     auto message = bt_interfaces::msg::ConditionResponse();
     m_tickResult.store(Status::undefined); //here we can put a struct
-    m_stateMachine.submitEvent("CMD_TICK");
+        //qInfo() << "BatteryLevelSkill::tick" << std::this_thread::get_id();
 
     while(m_tickResult.load()== Status::undefined) 
     {
@@ -100,13 +120,15 @@ void BatteryLevelSkill::tick( [[maybe_unused]] const std::shared_ptr<bt_interfac
 
 
 void BatteryLevelSkill::topic_callback(const sensor_msgs::msg::BatteryState::SharedPtr msg) {
-    // RCLCPP_INFO(m_node->get_logger(), "BatteryLevelSkill::topic_callback");
-    QVariantMap data;
-    data.insert("result", msg->percentage);
+        //qInfo() << "BatteryLevelSkill::topic_callback id" << std::this_thread::get_id();
+		m_batteryValue.store(msg->percentage);
+		m_fireTopicCallbackTimer = true;
+   // RCLCPP_INFO(m_node->get_logger(), "BatteryLevelSkill::topic_callback");
     // foreach (auto key, data.keys())
     // {
     //     qInfo()<<"-- key:"<<key<<" value:"<<data.value(key);
     // }
-    m_stateMachine.submitEvent("BATTERY_LEVEL", data);
+    
 
 }
+

@@ -7,9 +7,6 @@
 
 
     <state id="idle">
-        <onentry>
-            <log expr='"idle"'/>
-        </onentry>
         <transition event="haltCall" target="halt" />
         <transition event="tickCall" target="drain" />
 
@@ -17,7 +14,6 @@
 
     <state id="halt">
         <onentry>
-            <log expr='"halt"'/>
            <send event="haltReturn" />
         </onentry>
         <transition target="idle" />
@@ -25,7 +21,6 @@
 
     <state id="drain">
         <onentry>
-            <log expr='"drain"'/>
             <send event="BatteryDriverCmp.drainCall"/>
         </onentry>
         <transition target="drainRunning"/>
@@ -34,7 +29,6 @@
     <state id="drainSuccess">
 
         <onentry>
-            <log expr='"drainSuccess"'/>
             <send event="tickReturn" >
                 <param name="result" expr='"SUCCESS"'/>
             </send>
@@ -45,7 +39,6 @@
     <state id="drainRunning">
             
         <onentry>
-            <log expr='"drainRunning"'/>
             <send event="tickReturn"  >
                 <param name="result" expr='"RUNNING"'/>
             </send>
@@ -56,17 +49,12 @@
     </state>
 
     <state id="waitHalt">
-        <onentry>
-            <log expr='"waitHalt"'/>
-        </onentry>
+
         <!-- The BT will not send other events when in this state -->
         <transition event="BatteryDriverCmp.drainReturn" target="halt"/>
     </state>
 
     <state id="waitTick">
-        <onentry>
-            <log expr='"waitTick"'/>
-        </onentry>
         <!-- The BatteryDrainerCmp will not send other Return events when in this state -->
         <transition event="haltCall" target="halt" />
         <transition event="tickCall" target="drainSuccess"/>

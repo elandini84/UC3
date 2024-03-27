@@ -4,23 +4,21 @@
 	</datamodel>
 	<state id="idle" viz:xywh="-10 -20 120 40">
         <onentry>
-            <log expr='"idle"'/>
         </onentry>
 		<!-- This skill is a condition so there is no halt -->
-		<transition event="CMD_TICK" target="levelCheck"/>
-		<transition event="BATTERY_LEVEL" target="idle">
+		<transition event="tickCall" target="levelCheck"/>
+		<transition event="BatteryDriverCmpInterface.readLevel" target="idle">
 			<assign expr="_event.data.result" location="m_level"/>
 		</transition>
 	</state>
 	<state id="levelCheck" viz:xywh="200 0 120 40">
 		<onentry>
-            <log expr='"levelCheck"'/>
 			<if cond="m_level > 30.0">
-				<send event="TICK_RESPONSE">
+				<send event="tickReturn">
 					<param expr="&quot;SUCCESS&quot;" name="result"/>
 				</send>
 				<else/>
-				<send event="TICK_RESPONSE">
+				<send event="tickReturn">
 					<param expr="&quot;FAILURE&quot;" name="result"/>
 				</send>
 			</if>
@@ -28,4 +26,7 @@
 		<transition target="idle"/>
 	</state>
 </scxml>
-<!-- datamodel="cplusplus:BatteryLevelDataModel:BatteryLevelDataModel.h" -->
+<!-- datamodel="cplusplus:BatteryLevelDataModel:BatteryLevelDataModel.h"
+
+     		<log expr="_event.data.result"/>
+ -->

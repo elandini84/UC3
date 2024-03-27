@@ -47,7 +47,20 @@ bool BatteryDrainerSkill::start(int argc, char*argv[])
                                                                                                                  std::placeholders::_2));
                                                                                                                  
     m_threadSpin = std::make_shared<std::thread>(spin, m_node);
-
+    QObject::connect(&m_timerTick, &QTimer::timeout, [&]() {
+                if (m_fireTickCallTimer) {
+					    m_stateMachine.submitEvent("tickCall");
+					    m_fireTickCallTimer = false;
+				}
+            });
+    m_timerTick.start();
+    QObject::connect(&m_timerHalt, &QTimer::timeout,  [&]() {
+                if (m_fireHaltCallTimer) {
+						m_stateMachine.submitEvent("haltCall");
+					    m_fireHaltCallTimer = false;
+				}
+            });
+    m_timerHalt.start();
     m_stateMachine.connectToEvent("BatteryDriverCmp.drainCall", [this]([[maybe_unused]]const QScxmlEvent & event){
         std::shared_ptr<rclcpp::Node> nodeBatteryDrainer = rclcpp::Node::make_shared(m_name + "SkillNodeBatteryDrainer");
         // RCLCPP_INFO(nodeBatteryDrainer->get_logger(), "BatteryDriverCmp.drainCall");
@@ -116,7 +129,7 @@ void BatteryDrainerSkill::tick( [[maybe_unused]] const std::shared_ptr<bt_interf
     RCLCPP_INFO(m_node->get_logger(), "BatteryDrainerSkill::tick");
     auto message = bt_interfaces::msg::ActionResponse();
     m_tickResult.store(Status::undefined); //here we can put a struct
-    m_stateMachine.submitEvent("tickCall");
+    m_fireTickCallTimer = true;
 
     while(m_tickResult.load()== Status::undefined) 
     {
@@ -146,7 +159,7 @@ void BatteryDrainerSkill::halt( [[maybe_unused]] const std::shared_ptr<bt_interf
     std::lock_guard<std::mutex> lock(m_requestMutex);
     RCLCPP_INFO(m_node->get_logger(), "BatteryDrainerSkill::halt");
     m_haltResult.store(false); //here we can put a struct
-    m_stateMachine.submitEvent("haltCall");
+	m_fireHaltCallTimer = true;
 
     while(!m_haltResult.load()) 
     {

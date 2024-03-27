@@ -14,6 +14,7 @@
 #include <bt_interfaces/srv/tick_action.hpp>
 #include <bt_interfaces/srv/halt_action.hpp>
 #include <mutex>
+#include <QTimer>
 
 enum class Status{
     undefined,
@@ -47,4 +48,9 @@ private:
     // BatteryDrainerDataModel m_dataModel;
     BatteryDrainerSkillSM m_stateMachine;
     std::mutex m_requestMutex;
+    
+    bool m_fireHaltCallTimer{false};
+	bool m_fireTickCallTimer{false};
+	QTimer m_timerHalt;
+	QTimer m_timerTick;
 };
